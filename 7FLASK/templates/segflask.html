@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+ <head>
+	<title> 7seg flask </title>
+ </head>
+  <body>
+	 <h1>Select Number</h1>
+  <form action="/post"  method="post">
+     <fieldset>
+        <legend>selecting room</legend>
+        <p>
+           <label>Select list</label>
+           <select id = "room_number" name = "number">
+             <option value = 1>0</option>
+             <option value = 2>1</option>
+             <option value = 3>2</option>
+             <option value = 4>3</option>
+             <option value = 5>4</option>
+	     <option value = 6>5</option>
+             <option value = 7>6</option>
+             <option value = 8>7</option>
+             <option value = 9>8</option>
+             <option value = 10>9</option>
+           </select>
+        </p>
+     </fieldset>
+      <input id = "search" type = "submit" name="submit" onclick="input_number()" value = "search" />
+     <textarea id = "result__" name = "result" col="20" rows="4"> {{room_status}} </textarea>
+
+  </form>
+  </body>

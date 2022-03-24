@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Jelly Coding Lander</title>
+	<style>
+		#top{
+		width:1200px;
+		height:500px;
+		border: 4px solid gray;
+		float:initial;
+		margin:5px;
+		text-align: center;
+		font-size: 37px;
+		font-weight: bold
+		}
+
+		#chartContainer{
+		width:400px;
+		height:200px;
+		border: 4px solid skyblue;
+		float:left;
+		margin:5px;
+		text-align: center;
+		}
+	</style>
+</head>
+	<body>
+		<div id="top" >Parking UFO
+			<canvas id="canvas" width="1000" height="420"></canvas>
+		</div>
+
+		<div id="chartContainer" >
+			<canvas id="graph" width="500" height= "200"> </canvas>
+		</div>
+		<script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+
+		<div id = "control">control
+			<input type="button" value = "quit" onclick = "gameOut();" />
+		</div>
+
+		<script>
+			var game = {
+				game_out : false,
+				time_out : 2000, //200sec
+				tickNumber: 0,
+				timer: null,
+				board: [
+					"#########################",
+					"#                       #",
+					"#                 * *   #",
+					"#                       #",
+					"#                       #",
+					"#                       #",
+					"#                       #",
+					"#                       #",
+					"#             *******   #",
+					"# ********              #",
+					"#                       #",
+					"# **    **      @       #",
+					"# **** ****   * *       #",
+					"*************************"
+				],
+				tick: function() {
+					window.clearTimeout(game.timer);
+					game.tickNumber++;
+
+					lander.move();
+					lander.calc_altitude();
+
+					graphics.drawGame();
+
+					//if((game.tickNumber < game.time_out) && (game.game_out != true))
+						game.timer = window.setTimeout("game.tick()", 50);
+				}
+			};
+			var lander = {
+				BodySize : 15,
+				legSize : {x:5 , y: 8},
+				accerlationX : 0.0,
+				accerlationY : 0.0,
+				velocityX : 0.0,
+				velocityY : 0.0,
+				posX : 100,
+				posY : 0,
+				altitude : 0.0,
+				altitude_terrain : 0.0,
+
+				gravityY : 9.8,
+				gravityX : 0.0,
+
+				booster_accelation : 28.0,
+				booster_OnOff : false,
+				ship_angle : 0.0,
+
+				calc_altitude : function(){
+					var landerPosX_InGameBoard =0;
+					var landerPosY_InGameBoard =0;
+
+					landerPosX_InGameBoard = parseInt(lander.posX / graphics.squareSize)
+					landerPosY_InGameBoard = parseInt(lander.posY / graphics.squareSize)
+					//console.log('x index:'+ landerPosX_InGameBoard);
+
+					for (var j = landerPosY_InGameBoard; j < game.board.length; j++){
+
+						if(game.board[j][landerPosX_InGameBoard]  == '*'){
+							lander.altitude_terrain = (game.board.length - j)*graphics.squareSize;
+							break; // out from for loop
+							//console.log('game.board.length:'+game.board.length);
+							//console.log('block type:'+ game.board[j][landerPosX_InGameBoard], 'indexY'+j, 'indexX'+landerPosX_InGameBoard); //altitude_of_terrian);
+						}
+					}
+					//console.log('altitude_of_terrian',lander.altitude_terrain);
+					lander.altitude = (420-lander.posY)-(lander.altitude_terrain)-lander.legSize.y+(lander.BodySize/2);
+				},
+
+				move: function(){
+					if (lander.booster_OnOff == true)
+					{
+						lander.accerlationX = -lander.booster_accelation * Math.sin(lander.ship_angle * Math.PI / 180);
+						lander.accerlationX += lander.gravityX;
+						lander.accerlationY = -lander.booster_accelation * Math.cos(lander.ship_angle * Math.PI / 180);
+						lander.accerlationY += lander.gravityY;
+
+					}
+					else {
+						lander.accerlationX = lander.gravityX;
+						lander.accerlationY = lander.gravityY;
+					}
+
+					if(lander.altitude <= 0.0)
+					{
+						lander.velocityX = 0.0;
+						lander.velocityY = 0.0;
+						if(lander.accerlationY < 0){
+							lander.velocityX = lander.velocityX + lander.accerlationX * 0.05;
+							lander.velocityY = lander.velocityY + lander.accerlationY * 0.05;
+						}
+					}
+					else{
+						lander.velocityX = lander.velocityX + lander.accerlationX * 0.05;
+						lander.velocityY = lander.velocityY + lander.accerlationY * 0.05;
+					}
+
+					lander.posX = lander.posX + lander.velocityX * 0.05;
+					lander.posY = lander.posY + lander.velocityY * 0.05;
+				}
+
+			};
+			var graphics = {
+				canvas: document.getElementById("canvas"),
+				squareSize: 30,
+				currentY : 0,
+				altitude : 0,
+
+				drawBoard: function(ctx) {
+					var currentYoffset = 0;
+					game.board.forEach(
+								function checkLine(line, index_y) {
+										game.currentY = index_y;
+										line = line.split('');
+										var currentXoffset = 0;
+										line.forEach(
+												function checkCharacter(character, index_x) {
+															if(character == '#') {
+																	ctx.fillStyle = "black";
+																	ctx.fillRect(currentXoffset, currentYoffset, graphics.squareSize, graphics.squareSize);
+															}//end if
+															if(character == '*') {
+																	ctx.fillStyle = "skyblue";
+																	ctx.fillRect(currentXoffset, currentYoffset, graphics.squareSize, graphics.squareSize);
+																	game.altitude = game.board.length - game.currentY;
+															}//end if
+															if(character == '@') {
+																	ctx.fillStyle = "red";
+																	ctx.fillRect(currentXoffset, currentYoffset, graphics.squareSize, graphics.squareSize);
+																	game.altitude = game.board.length - game.currentY;
+															}//end if
+															currentXoffset += graphics.squareSize;
+												} //end function checkCharacter(character)
+										);//end line.forEach
+
+										currentYoffset += graphics.squareSize;
+								}// end function checkLine(line)
+					);//end game.board.forEach
+				},//end drawBoard: function(ctx)
+
+			drawShip: function(ctx) {
+
+				ctx.save()
+
+
+
+					if (lander.booster_OnOff == true)
+						ctx.fillStyle = "red";
+					else
+						ctx.fillStyle = "black";
+
+
+
+					ctx.translate(lander.posX, lander.posY-lander.BodySize)//, lander.BodySize, lander.BodySize);
+
+
+					ctx.rotate(-1.0*lander.ship_angle * (Math.PI / 180.0));
+
+					//drawBody
+					ctx.fillRect(0-lander.BodySize/2, 0-lander.BodySize/2, lander.BodySize, lander.BodySize);
+
+					//draw left leg
+					ctx.beginPath();
+					ctx.moveTo(0-lander.BodySize/2, lander.BodySize/2);
+					ctx.lineTo(-(lander.BodySize/2)-lander.legSize.x, (lander.BodySize/2)+lander.legSize.y);
+					ctx.stroke();
+
+					//draw right leg
+					ctx.beginPath();
+					ctx.moveTo(lander.BodySize/2, lander.BodySize/2);
+					ctx.lineTo((lander.BodySize/2)+lander.legSize.x, (lander.BodySize/2)+lander.legSize.y);
+					ctx.stroke();
+
+					//draw engine fire
+					if (lander.booster_OnOff == true){
+						ctx.strokeStyle="red";
+						ctx.beginPath();
+						ctx.arc(0, (lander.BodySize/2)+2.5, 5, 0, Math.PI * 2);
+						ctx.stroke();
+					}
+
+
+
+
+
+				ctx.restore()
+
+
+				if (lander.booster_OnOff == true)
+					ctx.fillStyle = "red";
+				else
+					ctx.fillStyle = "black";
+
+				ctx.font = "30px Arial";
+				ctx.fillText('angle:'+lander.ship_angle, 800,50);
+				ctx.fillText('acc_Y:'+lander.accerlationY, 800,100);
+				ctx.fillText('spd_Y:'+lander.velocityY, 800,150);
+				ctx.fillText('pos_Y:'+lander.posY, 800,200);
+				ctx.fillText('acc_X:'+lander.accerlationX, 800,300);
+				ctx.fillText('spd_X:'+lander.velocityX, 800,350);
+				ctx.fillText('pos_X:'+lander.posX, 800,400);
+				ctx.fillText('altitude:'+lander.altitude, 800,250);
+			},
+			drawGame: function () {
+				var ctx = graphics.canvas.getContext("2d");
+				ctx.clearRect(0, 0, graphics.canvas.width, graphics.canvas.height);
+				graphics.drawBoard(ctx);
+				graphics.drawShip(ctx);
+			}
+		};
+		var gameControl = {
+			audio : new Audio('http://www.therecordist.com/assets/sound/mp3_13/Spacecraft_Start_Engines_SE.mp3'),
+
+			processInput: function(keyPressed) {
+
+				//var audio = new Audio('http://www.therecordist.com/assets/sound/mp3_13/Spacecraft_Start_Engines_SE.mp3');
+    		//audio.src = "https://tv.kakao.com/v/390400361";
+
+				var key = keyPressed.key.toLowerCase();
+				if(key == "a") lander.ship_angle += 5;
+				if(key == "d") lander.ship_angle += -5;
+
+				if(key == "w"){
+					lander.booster_OnOff = true;
+					gameControl.audio.load();
+					gameControl.audio.play();
+				}
+				if(key == "s"){
+					lander.booster_OnOff = false;
+					gameControl.audio.pause();
+				}
+
+				//game.tick();
+			},
+			startGame: function () {
+				window.addEventListener("keypress", gameControl.processInput, false);
+				game.tick();
+			}
+		};
+		function gameOut(){
+			if(game.game_out != true)
+				game.game_out = true;
+		}
+
+		// https://canvasjs.com/html5-javascript-dynamic-chart/
+		window.onload = function () {
+
+		var dps = []; // dataPoints
+		var chart = new CanvasJS.Chart("chartContainer", {
+			title :{
+				text: "Dynamic Data"
+			},
+			axisY: {
+				includeZero: false
+			},
+			data: [{
+				type: "line",
+				dataPoints: dps
+			}]
+		});
+
+		var xVal = 0;
+		var yVal = 100;
+		var updateInterval = 50;
+		var dataLength = 800; // number of dataPoints visible at any point
+
+		var updateChart = function (count) {
+
+			count = count || 1;
+
+			for (var j = 0; j < count; j++) {
+				//yVal = yVal +  Math.round(5 + Math.random() *(-5-5));
+				yVal = lander.velocityY;
+				dps.push({
+					x: xVal,
+					y: yVal
+				});
+				xVal++;
+			}
+
+			if (dps.length > dataLength) {
+				dps.shift();
+			}
+
+			chart.render();
+		};
+
+		updateChart(dataLength);
+		setInterval(function(){updateChart()}, updateInterval);
+
+		}
+
+		gameControl.startGame();
+	</script>
+	</body>
+</html>
